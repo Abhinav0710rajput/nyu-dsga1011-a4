@@ -39,7 +39,7 @@ def example_transform(example):
 # The review text is edited in place (punctuation, spacing and HTML tags are left untouched).
 # Each eligible word (alphabetic, >= 3 letters, not a negation/function word, not part of a
 # contraction like "didn't") is independently:
-#   1. if it is an adjective/adverb in base form, replaced with probability SYNONYM_PROB by a
+#   1. if it is an adjective/adverb in base form with no verb sense, replaced with probability SYNONYM_PROB by a
 #      synonym from its most common adjective/adverb WordNet sense, then
 #   2. given one typo with probability TYPO_PROB: one letter (never the first) is swapped for a
 #      neighbouring key on a QWERTY keyboard.
@@ -63,6 +63,11 @@ PROTECTED_WORDS = {
     "hardly", "barely", "scarcely", "cannot", "but", "the", "and", "for", "are", "was", "were",
     "this", "that", "with", "you", "his", "her", "its", "they", "them", "she", "him", "has",
     "had", "have", "been", "who", "what", "which", "than", "then", "there", "their", "from",
+    # prepositions / particles (WordNet lists many of them as adjectives or adverbs)
+    "about", "above", "across", "after", "against", "along", "among", "around", "before",
+    "behind", "below", "beneath", "beside", "between", "beyond", "down", "during", "into",
+    "near", "off", "onto", "out", "over", "past", "since", "through", "throughout", "till",
+    "toward", "towards", "under", "until", "upon", "within",
 }
 
 WORD_RE = re.compile(r"[A-Za-z]+")
@@ -80,13 +85,16 @@ def _match_case(new_word, original):
 
 
 def _get_synonyms(word):
-    # Only adjectives/adverbs already in base form (so no tense/plural is lost), and only the
-    # lemmas of their most frequent adjective/adverb sense (avoids rare senses that change meaning).
+    # Only words that are purely adjectives/adverbs (no verb sense, so participles like "said",
+    # "thinking" are skipped) and already in base form, and only the lemmas of their most frequent
+    # adjective/adverb sense (avoids rare senses that change meaning).
     key = word.lower()
     if key not in _wordnet_cache:
         candidates = []
-        synsets = [s for s in wordnet.synsets(key) if s.pos() in SYNONYM_POS]
-        if synsets and wordnet.morphy(key, synsets[0].pos()) == key:
+        all_synsets = wordnet.synsets(key)
+        synsets = [s for s in all_synsets if s.pos() in SYNONYM_POS]
+        has_verb_sense = any(s.pos() == "v" for s in all_synsets)
+        if synsets and not has_verb_sense and wordnet.morphy(key, synsets[0].pos()) == key:
             for lemma in synsets[0].lemmas():
                 name = lemma.name().lower()
                 if name != key and name.isalpha():
