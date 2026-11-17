@@ -12,7 +12,13 @@
 # Q1 debug run: trains on 4k examples and evaluates on 1k. The handout expects more than 88% accuracy.
 # Submit from the repo root:   sbatch slurm/q1_debug.sbatch
 
-REPO_DIR="${SLURM_SUBMIT_DIR:-$(pwd)}"
+# Use the sbatch submit dir only if it is the repo; inside an OnDemand/Jupyter
+# job SLURM_SUBMIT_DIR points at the OnDemand app folder, so fall back to $PWD.
+if [ -n "${SLURM_SUBMIT_DIR:-}" ] && [ -d "$SLURM_SUBMIT_DIR/part1" ]; then
+    REPO_DIR="$SLURM_SUBMIT_DIR"
+else
+    REPO_DIR="$(pwd)"
+fi
 cd "$REPO_DIR"
 [ -d part1 ] || { echo "ERROR: submit this job from the repo root" >&2; exit 1; }
 
