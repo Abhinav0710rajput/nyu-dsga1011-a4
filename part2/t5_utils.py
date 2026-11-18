@@ -22,6 +22,7 @@ def initialize_model(args):
     '''
     if args.finetune:
         model = T5ForConditionalGeneration.from_pretrained('google-t5/t5-small')
+        model.shared.weight.requires_grad = False
     else:
         config = T5Config.from_pretrained('google-t5/t5-small')
         model = T5ForConditionalGeneration(config)
