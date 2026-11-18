@@ -35,16 +35,6 @@ def example_transform(example):
 # You can randomly select each word with some fixed probability to replace by a synonym.
 
 
-### Transformation: WordNet synonym replacement + QWERTY keyboard typos
-# The review text is edited in place (punctuation, spacing and HTML tags are left untouched).
-# Each eligible word (alphabetic, >= 3 letters, not a negation/function word, not part of a
-# contraction like "didn't") is independently:
-#   1. if it is an adjective/adverb in base form with no verb sense, replaced with probability SYNONYM_PROB by a
-#      synonym from its most common adjective/adverb WordNet sense, then
-#   2. given one typo with probability TYPO_PROB: one letter (never the first) is swapped for a
-#      neighbouring key on a QWERTY keyboard.
-# Capitalization of the original word is preserved. Negations are never touched so the label is kept.
-
 SYNONYM_PROB = 0.5
 TYPO_PROB = 0.30
 MIN_WORD_LEN = 3
@@ -57,13 +47,11 @@ QWERTY_NEIGHBORS = {
     "z": "asx", "x": "zsdc", "c": "xdfv", "v": "cfgb", "b": "vghn", "n": "bhjm", "m": "njk",
 }
 
-# Words that carry negation or are pure function words: never transformed.
 PROTECTED_WORDS = {
     "not", "no", "nor", "never", "none", "nothing", "neither", "nobody", "nowhere", "without",
     "hardly", "barely", "scarcely", "cannot", "but", "the", "and", "for", "are", "was", "were",
     "this", "that", "with", "you", "his", "her", "its", "they", "them", "she", "him", "has",
     "had", "have", "been", "who", "what", "which", "than", "then", "there", "their", "from",
-    # prepositions / particles (WordNet lists many of them as adjectives or adverbs)
     "about", "above", "across", "after", "against", "along", "among", "around", "before",
     "behind", "below", "beneath", "beside", "between", "beyond", "down", "during", "into",
     "near", "off", "onto", "out", "over", "past", "since", "through", "throughout", "till",
@@ -71,7 +59,7 @@ PROTECTED_WORDS = {
 }
 
 WORD_RE = re.compile(r"[A-Za-z]+")
-SYNONYM_POS = ("a", "s", "r")  # adjective, adjective satellite, adverb
+SYNONYM_POS = ("a", "s", "r")
 
 _wordnet_cache = {}
 
@@ -85,9 +73,6 @@ def _match_case(new_word, original):
 
 
 def _get_synonyms(word):
-    # Only words that are purely adjectives/adverbs (no verb sense, so participles like "said",
-    # "thinking" are skipped) and already in base form, and only the lemmas of their most frequent
-    # adjective/adverb sense (avoids rare senses that change meaning).
     key = word.lower()
     if key not in _wordnet_cache:
         candidates = []
@@ -104,7 +89,6 @@ def _get_synonyms(word):
 
 
 def _add_typo(word):
-    # Replace one letter (not the first) with a neighbouring QWERTY key.
     positions = [i for i in range(1, len(word)) if word[i].lower() in QWERTY_NEIGHBORS]
     if not positions:
         return word
@@ -122,7 +106,6 @@ def _transform_word(match):
     if len(word) < MIN_WORD_LEN or word.lower() in PROTECTED_WORDS or in_contraction:
         return word
 
-    # Synonyms only for lowercase/sentence-initial words, not ALL-CAPS or mid-sentence proper nouns.
     is_proper_noun = word[0].isupper() and start > 0 and text[:start].rstrip()[-1:] not in ".!?"
     if not is_proper_noun and random.random() < SYNONYM_PROB:
         synonyms = _get_synonyms(word)

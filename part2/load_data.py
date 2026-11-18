@@ -14,7 +14,7 @@ import torch
 from preprocess import preprocess_nl, preprocess_sql
 
 PAD_IDX = 0
-MAX_LEN = 512  # longest SQL target is 511 tokens incl. </s> (see Q4)
+MAX_LEN = 512
 
 class T5Dataset(Dataset):
 
@@ -31,23 +31,19 @@ class T5Dataset(Dataset):
         '''
         self.split = split
         self.tokenizer = T5TokenizerFast.from_pretrained('google-t5/t5-small')
-        # Decoder beginning-of-sentence token: <extra_id_0>
         self.bos_id = self.tokenizer.convert_tokens_to_ids('<extra_id_0>')
         self.encoder_ids, self.decoder_ids = self.process_data(data_folder, split, self.tokenizer)
 
     def process_data(self, data_folder, split, tokenizer):
-        # Pre-processing (task prefix, whitespace, '<' placeholder) lives in preprocess.py (see Q4)
         nl_lines = load_lines(os.path.join(data_folder, f'{split}.nl'))
         nl_lines = [preprocess_nl(line) for line in nl_lines]
         encoder_ids = [tokenizer(line, truncation=True, max_length=MAX_LEN)['input_ids'] for line in nl_lines]
 
-        # The test set has no SQL targets
         if split == 'test':
             return encoder_ids, None
 
         sql_lines = load_lines(os.path.join(data_folder, f'{split}.sql'))
         sql_lines = [preprocess_sql(line) for line in sql_lines]
-        # Tokenizer appends </s> (EOS) to every target
         decoder_ids = [tokenizer(line, truncation=True, max_length=MAX_LEN)['input_ids'] for line in sql_lines]
         return encoder_ids, decoder_ids
 
@@ -58,7 +54,6 @@ class T5Dataset(Dataset):
         encoder_ids = torch.tensor(self.encoder_ids[idx], dtype=torch.long)
         if self.decoder_ids is None:
             return encoder_ids, self.bos_id
-        # Teacher forcing: decoder input is <BOS> + target[:-1], decoder target is the full target (ends in </s>)
         target = torch.tensor(self.decoder_ids[idx], dtype=torch.long)
         decoder_input = torch.cat([torch.tensor([self.bos_id], dtype=torch.long), target[:-1]])
         return encoder_ids, decoder_input, target, self.bos_id
@@ -83,7 +78,7 @@ def normal_collate_fn(batch):
     encoder_mask = (encoder_ids != PAD_IDX).long()
     decoder_inputs = pad_sequence([item[1] for item in batch], batch_first=True, padding_value=PAD_IDX)
     decoder_targets = pad_sequence([item[2] for item in batch], batch_first=True, padding_value=PAD_IDX)
-    initial_decoder_inputs = torch.tensor([[item[3]] for item in batch], dtype=torch.long)  # B x 1
+    initial_decoder_inputs = torch.tensor([[item[3]] for item in batch], dtype=torch.long)
     return encoder_ids, encoder_mask, decoder_inputs, decoder_targets, initial_decoder_inputs
 
 def test_collate_fn(batch):
@@ -101,7 +96,7 @@ def test_collate_fn(batch):
     '''
     encoder_ids = pad_sequence([item[0] for item in batch], batch_first=True, padding_value=PAD_IDX)
     encoder_mask = (encoder_ids != PAD_IDX).long()
-    initial_decoder_inputs = torch.tensor([[item[1]] for item in batch], dtype=torch.long)  # B x 1
+    initial_decoder_inputs = torch.tensor([[item[1]] for item in batch], dtype=torch.long)
     return encoder_ids, encoder_mask, initial_decoder_inputs
 
 def get_dataloader(batch_size, split):

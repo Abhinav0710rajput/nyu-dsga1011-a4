@@ -1,7 +1,3 @@
-"""Q4: data statistics before (Table 1) and after (Table 2) pre-processing, using the T5 tokenizer.
-
-Usage (from part2/):   python data_stats.py
-"""
 import os
 
 from transformers import T5TokenizerFast
@@ -41,7 +37,6 @@ def main():
     data = {split: (load_lines(f"{DATA_DIR}/{split}.nl"), load_lines(f"{DATA_DIR}/{split}.sql"))
             for split in ("train", "dev")}
 
-    # Table 1: raw text, tokenized with the T5 tokenizer, no special tokens
     raw = {s: (stats(tokenizer, nl, False), stats(tokenizer, sql, False)) for s, (nl, sql) in data.items()}
     print_table("Table 1: before pre-processing (T5 tokens, no special tokens)", [
         ("Number of examples", len(data["train"][0]), len(data["dev"][0])),
@@ -54,8 +49,6 @@ def main():
         ("SQL queries containing <unk>", raw["train"][1]["unk"], raw["dev"][1]["unk"]),
     ])
 
-    # Table 2: pre-processed text exactly as fed to the model (task prefix, whitespace
-    # normalization, and the </s> EOS token the tokenizer appends)
     proc = {s: (stats(tokenizer, [preprocess_nl(x) for x in nl], True),
                 stats(tokenizer, [preprocess_sql(x) for x in sql], True))
             for s, (nl, sql) in data.items()}

@@ -21,16 +21,13 @@ def initialize_model(args):
     from scratch.
     '''
     if args.finetune:
-        # Pretrained weights; all parameters are fine-tuned
         model = T5ForConditionalGeneration.from_pretrained('google-t5/t5-small')
     else:
-        # Same architecture, randomly initialized weights (extra credit)
         config = T5Config.from_pretrained('google-t5/t5-small')
         model = T5ForConditionalGeneration(config)
     return model.to(DEVICE)
 
 def get_checkpoint_dir(args):
-    # Same path as checkpoint_dir in train_t5.train()
     model_type = 'ft' if args.finetune else 'scr'
     return os.path.join('checkpoints', f'{model_type}_experiments', args.experiment_name)
 
@@ -43,7 +40,6 @@ def mkdir(dirpath):
 
 def save_model(checkpoint_dir, model, best):
     # Save model checkpoint to be able to load the model later
-    # checkpoints/<ft|scr>_experiments/<experiment_name>/{best,last}/
     save_dir = os.path.join(checkpoint_dir, 'best' if best else 'last')
     mkdir(save_dir)
     model.save_pretrained(save_dir)

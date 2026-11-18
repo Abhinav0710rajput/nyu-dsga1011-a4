@@ -15,8 +15,8 @@ from preprocess import postprocess_sql
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 PAD_IDX = 0
-MAX_GEN_LEN = 512  # longest gold SQL is 511 tokens incl. </s>
-NUM_BEAMS = 1      # greedy decoding
+MAX_GEN_LEN = 512
+NUM_BEAMS = 1
 TOKENIZER = T5TokenizerFast.from_pretrained('google-t5/t5-small')
 
 def get_args():
@@ -155,7 +155,6 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
             decoder_input = decoder_input.to(DEVICE)
             decoder_targets = decoder_targets.to(DEVICE)
 
-            # 1) Teacher-forced cross-entropy loss on the gold SQL (same as in training)
             logits = model(
                 input_ids=encoder_input,
                 attention_mask=encoder_mask,
@@ -167,10 +166,8 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
             total_loss += loss.item() * num_tokens
             total_tokens += num_tokens
 
-            # 2) Free generation for the record / SQL metrics
             generated_queries += generate_queries(model, encoder_input, encoder_mask, initial_decoder_inputs)
 
-    # Execute the generated SQL on the database and compare with the ground truth
     save_queries_and_records(generated_queries, model_sql_path, model_record_path)
     sql_em, record_em, record_f1, error_msgs = compute_metrics(gt_sql_pth, model_sql_path,
                                                                gt_record_path, model_record_path)
@@ -179,10 +176,6 @@ def eval_epoch(args, model, dev_loader, gt_sql_pth, model_sql_path, gt_record_pa
     return total_loss / total_tokens, record_f1, record_em, sql_em, error_rate
 
 def generate_queries(model, encoder_input, encoder_mask, initial_decoder_inputs):
-    '''
-    Greedy decoding starting from the <extra_id_0> BOS token, then decode the token ids back
-    into executable SQL (inverse of the pre-processing in preprocess.py).
-    '''
     outputs = model.generate(
         input_ids=encoder_input,
         attention_mask=encoder_mask,
@@ -190,7 +183,6 @@ def generate_queries(model, encoder_input, encoder_mask, initial_decoder_inputs)
         max_new_tokens=MAX_GEN_LEN,
         num_beams=NUM_BEAMS,
     )
-    # clean_up_tokenization_spaces=False keeps " , " intact so SQL exact match is possible
     decoded = TOKENIZER.batch_decode(outputs, skip_special_tokens=True, clean_up_tokenization_spaces=False)
     return [postprocess_sql(q) for q in decoded]
 
