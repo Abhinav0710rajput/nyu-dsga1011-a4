@@ -1,7 +1,7 @@
 # DS-GA 1011 — Assignment 4 Write-up
 
 - **GitHub repository (code for Part 1 and Part 2):** https://github.com/Abhinav0710rajput/nyu-dsga1011-a4
-- **Google Drive (T5 checkpoint used for the Q7 outputs):** https://drive.google.com/file/d/1coS0vjK2hXTE-UgW5FEUat2EFrTi9fYn/view?usp=sharing
+- **Google Drive folder (T5 checkpoint used for the Q7 outputs):** https://drive.google.com/drive/folders/1khH96hK15rpBGpVrHhVMVAB5F9UblvN7?usp=sharing
 
 | Question | Result |
 |---|---|
