@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=t5-finetune
-#SBATCH --account=ds_ga_1011-2026fa
+#SBATCH --account=ds_ga_1006_001-2026fa
 #SBATCH --partition=c12m85-a100-1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=4
