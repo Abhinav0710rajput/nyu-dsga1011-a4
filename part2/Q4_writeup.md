@@ -17,7 +17,6 @@ Raw lines of `{train,dev}.nl` / `{train,dev}.sql`, tokenized without special tok
 | Max SQL query length | 510 | 502 |
 | Vocabulary size (natural language) | 791 | 465 |
 | Vocabulary size (SQL) | 555 | 395 |
-| SQL queries containing `<unk>` | 393 | 45 |
 
 ## Table 2: after pre-processing
 
@@ -32,7 +31,6 @@ input, `<` replaced in the SQL, and the `</s>` EOS token appended by the tokeniz
 | Max SQL query length | 511 | 503 |
 | Vocabulary size (natural language) | 796 | 470 |
 | Vocabulary size (SQL) | 557 | 397 |
-| SQL queries containing `<unk>` | 0 | 0 |
 
 ## Pre-processing steps (`part2/preprocess.py`)
 
